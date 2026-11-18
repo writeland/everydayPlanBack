@@ -1,6 +1,6 @@
 # 今天 · 每日日程
 
-一个适合 Java 初学者练习的本地全栈项目：记录日程和笔记、标记完成、查看今日进度，并在页面打开时接收浏览器提醒。
+一个适合 Java 初学者练习的本地全栈项目：记录日程和笔记、完成打卡并保留打卡历史、查看今日进度，并在页面打开时接收浏览器提醒。
 
 ## 技术栈与版本
 
@@ -34,7 +34,7 @@ Copy-Item '.\db-local.properties.example' '.\本地开发\db-local.properties'
 
 `本地开发/` 已加入 Git 忽略规则，配置不会被提交。也可以通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 环境变量覆盖连接信息。
 
-执行 `sql/init.sql` 创建数据库和表，并准备一个有该库读写权限的数据库用户。不要把真实密码写入 README 或提交到远端。
+执行 `sql/init.sql` 创建数据库、日程表和打卡记录表，并准备一个有该库读写权限的数据库用户。已有数据库时可以再次执行：脚本使用 `IF NOT EXISTS`，不会删除已有日程数据。不要把真实密码写入 README 或提交到远端。
 
 ### 启动应用
 
@@ -57,12 +57,29 @@ Navicat 连接：主机 `127.0.0.1`，端口 `3306`，数据库 `daily_checkin`�
 
 ## 项目怎么运作
 
+后端参考若依的分层命名，在 `src/main/java/com/example/daily` 下按职责组织：
+
+```text
+daily/
+├── DailyApplication.java  启动入口
+├── controller/            接收请求并返回响应
+├── service/               业务处理与事务协调
+├── mapper/                MyBatis 接口和 SQL
+└── domain/                日程与打卡数据对象
+```
+
+例如打卡流程为 `CheckinController → EntryWorkflowService → EntryService / CheckinRecordService → Mapper → 数据库`。目前仍是单个 Maven 模块，Service 直接使用类；后续业务增长时可再考虑按功能拆包、增加接口或拆分模块。
+
 1. `src/main/resources/static/index.html` 定义页面结构；`style.css` 控制外观；`app.js` 处理按钮、调用接口和浏览器通知。
-2. `EntryController.java` 接收浏览器的 HTTP 请求，`EntryService.java` 组织日程业务步骤，`EntryRepository.java` 是 MyBatis Mapper，使用 SQL 操作 MySQL。
-3. `Entry.java` 描述一条日程和输入校验；MySQL 保存数据。
+2. `EntryController.java` 接收日程请求；`EntryWorkflowService.java` 协调日程修改/完成与写入打卡记录；`EntryService.java` 与 `CheckinRecordService.java` 分别处理日程和打卡记录业务；两个 Repository 是 MyBatis Mapper，使用 SQL 操作 MySQL。
+3. `Entry.java` 描述一条日程；`CheckinRecord.java` 描述一次打卡历史。`entries` 保存当前日程状态，`checkin_records` 保存打卡日期、时间和标题快照。
 4. `application.properties` 保存数据库配置；`pom.xml` 声明项目依赖。
 
-接口：`GET /api/entries` 查询；`POST /api/entries` 新建；`PUT /api/entries/{id}` 更新；`DELETE /api/entries/{id}` 删除。前端通过 `fetch` 发送 JSON，后端返回 JSON。
+接口：`GET /api/entries` 查询；`POST /api/entries` 新建；`PUT /api/entries/{id}` 更新日程内容；`DELETE /api/entries/{id}` 删除；`POST /api/entries/{id}/check-in` 完成日程并记录打卡；`POST /api/entries/{id}/reopen` 恢复为未完成；`GET /api/checkins` 查询打卡历史，可用 `?date=2026-11-18` 按日期筛选。前端通过 `fetch` 调用接口。
+
+业务接口统一返回 `{ "code": 0, "data": ..., "msg": "成功" }`：`code=0` 表示业务成功，`data` 根据接口可能是对象、数组或 `null`。请求校验失败、日程不存在及服务器异常等返回相同结构，`code` 分别为 400、404、500，并保留对应 HTTP 状态。新建成功使用 HTTP 201；删除和恢复成功使用 HTTP 200，`data` 为 `null`。HTTP 状态码和 JSON 业务码是两个不同的字段。本约定与若依常用的成功码 200 不同，以本项目定义为准。
+
+同一条日程每天最多生成一条打卡记录；重复点击完成会返回当天已有记录。恢复为未完成不会删除历史打卡记录。删除日程后，打卡历史保留标题、日期和时间，记录中的日程 ID 会清空。
 
 ## 建议的学习顺序
 

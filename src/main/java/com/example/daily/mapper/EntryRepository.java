@@ -1,21 +1,32 @@
-package com.example.daily;
+package com.example.daily.mapper;
+
+import com.example.daily.domain.Entry;
 
 import java.util.List;
 import org.apache.ibatis.annotations.*;
 
+/** MyBatis Mapper：接口方法与 SQL 对应，由 MyBatis 提供实现。 */
 @Mapper
 public interface EntryRepository {
+    /** 查询全部日程；entry_date 与 Java 字段 date 名称不同，需显式映射。 */
     @Select("SELECT id, title, note, entry_date, reminder_time, done FROM entries ORDER BY entry_date ASC, id DESC")
     @Results(id = "entryMapping", value = {@Result(column = "entry_date", property = "date"), @Result(column = "reminder_time", property = "reminderTime")})
     List<Entry> findAll();
+    /** 按主键查询；#{id} 是绑定参数，找不到时返回 null。 */
     @Select("SELECT id, title, note, entry_date, reminder_time, done FROM entries WHERE id = #{id}")
     @ResultMap("entryMapping")
     Entry findById(Long id);
+    /** 插入后将数据库生成的主键回填到 entry.id；返回受影响的行数。 */
     @Insert("INSERT INTO entries (title, note, entry_date, reminder_time, done) VALUES (#{title}, #{note}, #{date}, #{reminderTime}, #{done})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Entry entry);
+    /** 按对象中的 ID 更新日程字段，返回受影响的行数。 */
     @Update("UPDATE entries SET title = #{title}, note = #{note}, entry_date = #{date}, reminder_time = #{reminderTime}, done = #{done} WHERE id = #{id}")
     int update(Entry entry);
+    /** 只修改完成状态；@Param 为多个方法参数指定 SQL 中使用的名称。 */
+    @Update("UPDATE entries SET done = #{done} WHERE id = #{id}")
+    int updateDone(@Param("id") Long id, @Param("done") boolean done);
+    /** 删除指定日程；外键配置使关联打卡记录保留，但 entry_id 会变为 null。 */
     @Delete("DELETE FROM entries WHERE id = #{id}")
     int deleteById(Long id);
 }

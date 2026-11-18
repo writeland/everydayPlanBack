@@ -1,5 +1,5 @@
 package com.exmple.practice;
-import com.example.daily.Entry;
+import com.example.daily.domain.Entry;
 import java.util.ArrayList;
 import java.util.List;
 

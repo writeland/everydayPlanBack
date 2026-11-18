@@ -1,14 +1,15 @@
 const $ = selector => document.querySelector(selector);
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
-let entries = [], filter = 'today', editing = null, notified = new Set();
+let entries = [], checkins = [], filter = 'today', editing = null, notified = new Set();
 const reminderKey = 'daily-checkin-reminders-enabled';
 let remindersEnabled = localStorage.getItem(reminderKey) !== 'false';
 const dialog = $('#dialog'), form = $('#form');
 function toast(message) { const el = $('#toast'); el.textContent = message; el.style.display = 'block'; clearTimeout(toast.timer); toast.timer = setTimeout(() => el.style.display = 'none', 3500); }
-async function api(path, options = {}) {
-  const response = await fetch('/api/entries' + path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
-  if (!response.ok) throw new Error(`请求失败（${response.status}）`);
-  return response.status === 204 ? null : response.json();
+async function api(path, options = {}, resource = '/api/entries') {
+  const response = await fetch(resource + path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+  const result = await response.json();
+  if (!response.ok || result.code !== 0) throw new Error(result.msg || `请求失败（${response.status}）`);
+  return result.data;
 }
 async function refresh() { try { entries = await api(''); render(); checkReminders(); } catch (e) { toast('无法连接后端，请确认服务正在运行。'); } }
 function render() {
@@ -16,6 +17,7 @@ function render() {
   $('#total').textContent = todays.length; $('#completed').textContent = completed;
   const progress = todays.length ? Math.round(completed / todays.length * 100) : 0;
   $('#percent').textContent = progress + '%'; $('#bar').style.width = progress + '%';
+  if (filter === 'checkins') { renderCheckins(); return; }
   const visible = entries.filter(e => filter === 'today' ? e.date === day : filter === 'done' ? e.done : true);
   $('#heading').firstChild.textContent = ({today:'今日计划 ',all:'全部日程 ',done:'已完成 '})[filter];
   $('#count').textContent = visible.length;
@@ -27,7 +29,17 @@ function render() {
   for (const entry of visible) {
     const item = document.createElement('article'); item.className = 'item' + (entry.done ? ' done' : '');
     const check = document.createElement('input'); check.type = 'checkbox'; check.className = 'check'; check.checked = entry.done; check.setAttribute('aria-label', `标记${entry.title}为${entry.done ? '未完成' : '已完成'}`);
-    check.addEventListener('change', async () => { try { await api('/' + entry.id, {method:'PUT',body:JSON.stringify({...entry,done:check.checked})}); await refresh(); } catch { check.checked = entry.done; toast('保存失败，请重试。'); } });
+    check.addEventListener('change', async () => {
+      const completing = check.checked;
+      try {
+        await api('/' + entry.id + (completing ? '/check-in' : '/reopen'), {method:'POST'});
+        await refresh();
+        toast(completing ? '打卡成功，记录已保存。' : '已恢复未完成，历史打卡记录保留。');
+      } catch {
+        check.checked = entry.done;
+        toast('保存失败，请重试。');
+      }
+    });
     const body = document.createElement('div'); body.className = 'item-body';
     const title = document.createElement('div'); title.className = 'item-title'; title.textContent = entry.title;
     const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = `◷ ${entry.date}${entry.reminderTime ? ' · ' + entry.reminderTime.slice(0,5) + ' 提醒' : ''}`;
@@ -38,10 +50,36 @@ function render() {
     actions.append(edit,del); item.append(check,body,actions); list.append(item);
   }
 }
+function renderCheckins() {
+  $('#heading').firstChild.textContent = '打卡记录 ';
+  $('#count').textContent = checkins.length;
+  $('#listSubtitle').textContent = '每一次完成，都在这里留下记录。';
+  const list = $('#list'); list.replaceChildren(); $('#empty').hidden = checkins.length > 0;
+  $('#empty h3').textContent = '还没有打卡记录';
+  $('#empty p').textContent = '完成一项日程后，打卡记录会留在这里。';
+  $('#emptyAdd').hidden = true;
+  for (const record of checkins) {
+    const item = document.createElement('article'); item.className = 'item checkin-item';
+    const mark = document.createElement('div'); mark.className = 'checkin-mark'; mark.textContent = '✓';
+    const body = document.createElement('div'); body.className = 'item-body';
+    const title = document.createElement('div'); title.className = 'item-title'; title.textContent = record.entryTitle;
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const time = record.checkedAt ? record.checkedAt.replace('T', ' ').slice(0, 16) : '';
+    meta.textContent = `✓ ${record.checkinDate}${time ? ' · ' + time : ''}`;
+    body.append(title, meta); item.append(mark, body); list.append(item);
+  }
+}
 function openForm(entry = null) { editing = entry; form.reset(); $('#modalTitle').textContent = entry ? '编辑日程' : '新建日程'; $('#title').value = entry?.title || ''; $('#date').value = entry?.date || today(); $('#time').value = entry?.reminderTime?.slice(0,5) || ''; $('#note').value = entry?.note || ''; dialog.showModal(); $('#title').focus(); }
 $('#add').onclick = () => openForm(); $('#emptyAdd').onclick = () => openForm(); $('#close').onclick = $('#cancel').onclick = () => dialog.close();
 form.onsubmit = async event => { event.preventDefault(); const title = $('#title').value.trim(); if (!title) { toast('请填写日程内容。'); return; } const data = {title, date:$('#date').value, reminderTime:$('#time').value || null, note:$('#note').value, done:editing?.done || false}; try { await api(editing ? '/'+editing.id : '', {method:editing ? 'PUT' : 'POST',body:JSON.stringify(data)}); dialog.close(); await refresh(); toast('日程已保存'); } catch { toast('保存失败，请检查内容并重试。'); } };
-document.querySelectorAll('.nav').forEach(button => button.onclick = () => { filter = button.dataset.filter; document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active',b === button)); render(); });
+document.querySelectorAll('.nav').forEach(button => button.onclick = async () => {
+  filter = button.dataset.filter;
+  document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b === button));
+  if (filter === 'checkins') {
+    try { checkins = await api('', {}, '/api/checkins'); render(); }
+    catch { checkins = []; render(); toast('读取打卡记录失败，请确认已创建打卡记录表。'); }
+  } else render();
+});
 function updateReminderButton() { const enabled = remindersEnabled && 'Notification' in window && Notification.permission === 'granted'; $('#notify').textContent = enabled ? '♧ 关闭提醒' : '♧ 开启提醒'; $('#notify').setAttribute('aria-pressed', String(enabled)); }
 $('#notify').onclick = async () => { if (!('Notification' in window)) return toast('当前浏览器不支持通知。'); if (remindersEnabled && Notification.permission === 'granted') { remindersEnabled = false; localStorage.setItem(reminderKey, 'false'); updateReminderButton(); return toast('提醒已关闭。'); } try { const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission(); if (permission === 'granted') { remindersEnabled = true; localStorage.setItem(reminderKey, 'true'); updateReminderButton(); toast('提醒已开启，请保持页面打开。'); checkReminders(); } else { updateReminderButton(); toast('未获得通知权限，请在浏览器设置中开启。'); } } catch { toast('无法开启通知，请检查浏览器设置。'); } };
 window.addEventListener('storage', event => { if (event.key === reminderKey) { remindersEnabled = event.newValue !== 'false'; updateReminderButton(); } });
