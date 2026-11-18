@@ -25,14 +25,13 @@ Vue 可作为后续学习和重构方向，但目前没有 Vue 依赖，因此�
 
 ### 配置数据库连接
 
-先创建本地配置目录，再复制模板并填写本机数据库密码：
+在项目根目录复制模板，并填写本机数据库账号和密码：
 
 ```powershell
-New-Item -ItemType Directory -Force '.\本地开发' | Out-Null
-Copy-Item '.\db-local.properties.example' '.\本地开发\db-local.properties'
+Copy-Item '.\db-local.properties.example' '.\db-local.properties'
 ```
 
-`本地开发/` 已加入 Git 忽略规则，配置不会被提交。也可以通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 环境变量覆盖连接信息。
+根目录的 `db-local.properties` 已加入 Git 忽略规则，不会被提交。也可以通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 环境变量覆盖连接信息。
 
 执行 `sql/init.sql` 创建数据库、日程表和打卡记录表，并准备一个有该库读写权限的数据库用户。已有数据库时可以再次执行：脚本使用 `IF NOT EXISTS`，不会删除已有日程数据。不要把真实密码写入 README 或提交到远端。
 
@@ -45,7 +44,7 @@ cd daily-checkin
 mvn spring-boot:run
 ```
 
-也可以在 IDEA 中运行 `DailyApplication`，并将工作目录设为项目根目录。启动前确认本机 MySQL 已运行，且 `本地开发/db-local.properties` 中的连接配置正确。
+也可以在 IDEA 中运行 `DailyApplication`，并将工作目录设为项目根目录。启动前确认本机 MySQL 已运行，且 `db-local.properties` 中的连接配置正确。
 
 看到应用启动成功后，访问 <http://localhost:8080>。按 `Ctrl+C` 停止应用。数据库库名为 `daily_checkin`；实际数据库文件由本机 MySQL 管理，不包含在项目仓库中，请按自己的数据库环境备份。
 
