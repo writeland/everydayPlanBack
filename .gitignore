@@ -1,0 +1,14 @@
+/target/
+/data/
+/.idea/
+*.iml
+
+# Personal notes, one-off migration files, local database and workstation scripts
+/本地开发/
+
+# Local credentials and environment files
+/db-local.properties
+**/*.local.md
+.env
+.env.*
+!.env.example
