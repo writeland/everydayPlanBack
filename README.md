@@ -6,7 +6,7 @@
 
 | 技术 | 本项目的版本或要求 | 用途 |
 | --- | --- | --- |
-| Java / JDK | 本机 JDK 17.0.21；`java.version` 为 17，但 Maven 编译插件目前仍显式设为 source/target 8，待在学习中统一 | 后端开发与运行 |
+| Java / JDK | JDK 17；Maven 编译版本为 17 | 后端开发与运行 |
 | Spring Boot | **3.5.7**，在 `pom.xml` 中指定 | 启动应用并提供 Web、数据库等集成 |
 | Spring Framework / Spring MVC | 由 Spring Boot 3.5.7 管理 | Web 请求处理 |
 | MyBatis Spring Boot Starter | **3.0.5** | 通过 SQL 操作数据库 |
@@ -15,7 +15,7 @@
 | 前端 | 原生 HTML、CSS、JavaScript；**未使用 Vue** | 页面和交互 |
 | Node.js / npm | 本项目不需要 | 当前前端无需构建工具 |
 
-Spring Boot 的版本和 Java 配置可在 `pom.xml` 中查看。注意：当前 `java.version=17` 与编译插件中的 `source/target=8` 不一致；会在 Maven 学习阶段说明并统一。可以运行 Maven 的 `dependency:tree` 查看实际解析的依赖版本。
+Spring Boot 的版本和 Java 配置可在 `pom.xml` 中查看。可以运行 Maven 的 `dependency:tree` 查看实际解析的依赖版本。
 
 Vue 可作为后续学习和重构方向，但目前没有 Vue 依赖，因此没有可填写的 Vue 版本。建议完成现有项目后再新建 Vue 3 前端，届时将实际使用的具体版本写入 README。
 
