@@ -3,6 +3,30 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.daily.mapper.CheckinRepository">
+    <!-- 列表与总数共用日期筛选，避免两处条件不一致。 -->
+    <sql id="checkinFilter">
+        <where>
+            <if test="date != null">
+                AND checkin_date = #{date}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 查询当前页；日期可选。 -->
+    <select id="findPage" resultType="com.example.daily.domain.CheckinRecord">
+        SELECT id, entry_id, entry_title, checkin_date, checked_at
+        FROM checkin_records
+        <include refid="checkinFilter"/>
+        ORDER BY checkin_date DESC, checked_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 总数和列表使用相同日期筛选条件。 -->
+    <select id="countPage" resultType="long">
+        SELECT COUNT(*) FROM checkin_records
+        <include refid="checkinFilter"/>
+    </select>
+
     <!-- id 对应接口方法名，resultType 指查询结果每一行的 Java 类型。 -->
     <select id="findByDate" resultType="com.example.daily.domain.CheckinRecord">
         SELECT id, entry_id, entry_title, checkin_date, checked_at

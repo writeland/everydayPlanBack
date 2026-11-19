@@ -54,6 +54,11 @@ class EntryApiTest {
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(2)).andExpect(jsonPath("$.data.items[0].title").value("A"));
         mvc.perform(get("/api/checkins/page").param("page", "2").param("size", "1").param("date", "2026-12-01"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(2)).andExpect(jsonPath("$.data.items[0].entryTitle").value("A"));
+        mvc.perform(get("/api/checkins/page").param("page", "1").param("size", "2"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(3))
+            .andExpect(jsonPath("$.data.items.length()").value(2)).andExpect(jsonPath("$.data.items[0].entryTitle").value("C"));
+        mvc.perform(get("/api/checkins/page").param("date", "2026-12-03"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(0)).andExpect(jsonPath("$.data.items.length()").value(0));
         mvc.perform(get("/api/entries/page").param("page", "0"))
             .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(400));
         mvc.perform(get("/api/checkins/page").param("size", "101"))

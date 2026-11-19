@@ -14,13 +14,9 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface CheckinRepository {
     /** 根据打卡日期筛选并按时间倒序分页；ID 作为稳定排序的最后条件。 */
-    @Select({"<script> SELECT id, entry_id, entry_title, checkin_date, checked_at FROM checkin_records",
-        "<where><if test='date != null'>AND checkin_date = #{date}</if></where>",
-        "ORDER BY checkin_date DESC, checked_at DESC, id DESC LIMIT #{size} OFFSET #{offset}</script>"})
     List<CheckinRecord> findPage(@Param("date") LocalDate date, @Param("offset") long offset, @Param("size") int size);
 
-    @Select({"<script> SELECT COUNT(*) FROM checkin_records",
-        "<where><if test='date != null'>AND checkin_date = #{date}</if></where></script>"})
+    /** 按相同日期条件统计总数，供分页信息使用。 */
     long countPage(@Param("date") LocalDate date);
     /** 查询全部历史，最近日期与时间排在前面。 */
     @Select("SELECT id, entry_id, entry_title, checkin_date, checked_at FROM checkin_records ORDER BY checkin_date DESC, checked_at DESC, id DESC")
