@@ -27,8 +27,7 @@ public interface CheckinRepository {
     List<CheckinRecord> findAll();
 
     /** 只查询指定打卡日期的历史。 */
-    @Select("SELECT id, entry_id, entry_title, checkin_date, checked_at FROM checkin_records WHERE checkin_date = #{date} ORDER BY checked_at DESC, id DESC")
-    List<CheckinRecord> findByDate(LocalDate date);
+    List<CheckinRecord> findByDate(@Param("date") LocalDate date);
 
     /** 查询某条日程当天的记录；不存在时返回 null。 */
     @Select("SELECT id, entry_id, entry_title, checkin_date, checked_at FROM checkin_records WHERE entry_id = #{entryId} AND checkin_date = #{date}")

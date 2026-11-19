@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.daily.mapper.CheckinRepository">
+    <!-- id 对应接口方法名，resultType 指查询结果每一行的 Java 类型。 -->
+    <select id="findByDate" resultType="com.example.daily.domain.CheckinRecord">
+        SELECT id, entry_id, entry_title, checkin_date, checked_at
+        FROM checkin_records
+        WHERE checkin_date = #{date}
+        ORDER BY checked_at DESC, id DESC
+    </select>
+</mapper>

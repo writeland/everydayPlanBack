@@ -44,6 +44,12 @@ class EntryApiTest {
         jdbc.update("DELETE FROM entries");
         jdbc.update("INSERT INTO entries(title,entry_date,done) VALUES ('A','2026-12-01',false),('B','2026-12-01',false),('C','2026-12-01',true),('D','2026-12-02',false)");
         jdbc.update("INSERT INTO checkin_records(entry_title,checkin_date,checked_at) VALUES ('A','2026-12-01','2026-12-01 10:00:00'),('B','2026-12-01','2026-12-01 11:00:00'),('C','2026-12-02','2026-12-02 10:00:00')");
+        mvc.perform(get("/api/checkins").param("date", "2026-12-01"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
+            .andExpect(jsonPath("$.data[0].entryTitle").value("B"))
+            .andExpect(jsonPath("$.data[1].entryTitle").value("A"));
+        mvc.perform(get("/api/checkins").param("date", "2026-12-03"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
         mvc.perform(get("/api/entries/page").param("page", "2").param("size", "1").param("date", "2026-12-01").param("done", "false"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(2)).andExpect(jsonPath("$.data.items[0].title").value("A"));
         mvc.perform(get("/api/checkins/page").param("page", "2").param("size", "1").param("date", "2026-12-01"))
