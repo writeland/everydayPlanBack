@@ -20,18 +20,20 @@ public class EntryWorkflowService {
     }
 
     /**
-     * 更新日程；如果更新后的状态是已完成，确保当天有一条打卡记录。
+     * 更新日程；只有从未完成变为已完成时才写入打卡记录。
      * 外层事务把更新和记录放在一起：符合回滚规则的异常向外抛出时，两步一起回滚。
      * Optional.map 只在日程存在时执行括号内的函数；不存在则继续返回 empty。
      */
     @Transactional
     public Optional<Entry> updateEntry(Long entryId, Entry input) {
-        return entryService.updateEntry(entryId, input).map(entry -> {
-            if (entry.done) {
-                checkinRecordService.recordCompletion(entry);
-            }
-            return entry;
-        });
+        // 在同一事务中锁定原记录，避免其他更新同时改变完成状态。
+        return entryService.findForUpdate(entryId).flatMap(previous ->
+                entryService.updateEntry(entryId, input).map(entry -> {
+                    if (!previous.done && entry.done) {
+                        checkinRecordService.recordCompletion(entry);
+                    }
+                    return entry;
+                }));
     }
 
     /** 完成日程并记录打卡；方法引用相当于 entry -> checkinRecordService.recordCompletion(entry)。 */

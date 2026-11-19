@@ -2,6 +2,7 @@ package com.example.daily.controller;
 
 import com.example.daily.domain.CheckinRecord;
 import com.example.daily.common.ApiResult;
+import com.example.daily.common.PageResult;
 import com.example.daily.service.CheckinRecordService;
 import com.example.daily.service.EntryWorkflowService;
 
@@ -36,6 +37,14 @@ public class CheckinController {
     public ApiResult<List<CheckinRecord>> list(@RequestParam(required = false)
                                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ApiResult.success(recordService.listRecords(date));
+    }
+
+    /** 分页查询历史，日期条件与旧列表接口一致。 */
+    @GetMapping("/checkins/page")
+    public ApiResult<PageResult<CheckinRecord>> page(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ApiResult.success(recordService.listPage(page, size, date));
     }
 
     /** 完成指定日程；Optional 为空时抛出异常，由全局异常处理器生成 404 响应。 */

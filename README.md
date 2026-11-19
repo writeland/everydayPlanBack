@@ -56,7 +56,7 @@ Navicat 连接：主机 `127.0.0.1`，端口 `3306`，数据库 `daily_checkin`�
 
 ## 项目怎么运作
 
-功能说明、接口与数据流转图见 [功能与数据流转](功能与数据流转.md)。
+功能说明、接口与数据流转图见 [功能与数据流转](功能与数据流转.md)，分页请求示例见 [分页接口联调文档](分页接口联调文档.md)。
 
 后端参考若依的分层命名，在 `src/main/java/com/example/daily` 下按职责组织：
 
@@ -77,6 +77,8 @@ daily/
 4. `application.properties` 保存数据库配置；`pom.xml` 声明项目依赖。
 
 接口：`GET /api/entries` 查询；`POST /api/entries` 新建；`PUT /api/entries/{id}` 更新日程内容；`DELETE /api/entries/{id}` 删除；`POST /api/entries/{id}/check-in` 完成日程并记录打卡；`POST /api/entries/{id}/reopen` 恢复为未完成；`GET /api/checkins` 查询打卡历史，可用 `?date=2026-11-18` 按日期筛选。前端通过 `fetch` 调用接口。
+
+分页接口为 `GET /api/entries/page` 和 `GET /api/checkins/page`，参数 `page` 从 1 开始、`size` 为 1～100；日程可选 `date` 和 `done`，打卡可选 `date`。返回的 `data` 包含 `items`、`total`、`page`、`size`。旧的全量接口保留给统计、提醒和旧页面使用。
 
 业务接口统一返回 `{ "code": 0, "data": ..., "msg": "成功" }`：`code=0` 表示业务成功，`data` 根据接口可能是对象、数组或 `null`。请求校验失败、日程不存在及服务器异常等返回相同结构，`code` 分别为 400、404、500，并保留对应 HTTP 状态。新建成功使用 HTTP 201；删除和恢复成功使用 HTTP 200，`data` 为 `null`。HTTP 状态码和 JSON 业务码是两个不同的字段。本约定与若依常用的成功码 200 不同，以本项目定义为准。
 

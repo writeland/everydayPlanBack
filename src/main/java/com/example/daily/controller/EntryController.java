@@ -2,6 +2,9 @@ package com.example.daily.controller;
 
 import com.example.daily.domain.Entry;
 import com.example.daily.common.ApiResult;
+import com.example.daily.common.PageResult;
+import java.time.LocalDate;
+import org.springframework.format.annotation.DateTimeFormat;
 import com.example.daily.service.EntryService;
 import com.example.daily.service.EntryWorkflowService;
 
@@ -26,6 +29,14 @@ public class EntryController {
 
     /** GET /api/entries：先查出列表，再用 ApiResult 包装；Spring MVC 将结果转换为 JSON。 */
     @GetMapping public ApiResult<List<Entry>> list() { return ApiResult.success(service.listEntries()); }
+    /** page 从 1 开始；date 和 done 可选，先筛选再分页。 */
+    @GetMapping("/page")
+    public ApiResult<PageResult<Entry>> page(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Boolean done) {
+        return ApiResult.success(service.listPage(page, size, date, done));
+    }
     /** POST /api/entries：请求体 JSON 转为 Entry，@Valid 触发字段校验；成功返回 201。 */
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
     public ApiResult<Entry> create(@Valid @RequestBody Entry input) {

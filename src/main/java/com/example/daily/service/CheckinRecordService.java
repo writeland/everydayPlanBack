@@ -2,6 +2,7 @@ package com.example.daily.service;
 
 import com.example.daily.domain.CheckinRecord;
 import com.example.daily.domain.Entry;
+import com.example.daily.common.PageResult;
 import com.example.daily.mapper.CheckinRepository;
 
 import java.time.LocalDate;
@@ -27,6 +28,12 @@ public class CheckinRecordService {
     /** 未传日期查询全部记录；传入日期则只查询对应的一天。 */
     public List<CheckinRecord> listRecords(LocalDate date) {
         return date == null ? repository.findAll() : repository.findByDate(date);
+    }
+
+    /** 查询打卡历史的一页；date 为空表示不限制日期。 */
+    public PageResult<CheckinRecord> listPage(int page, int size, LocalDate date) {
+        long offset = PageResult.offset(page, size);
+        return new PageResult<>(repository.findPage(date, offset, size), repository.countPage(date), page, size);
     }
 
     /**

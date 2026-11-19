@@ -1,6 +1,8 @@
 package com.example.daily.service;
 
 import com.example.daily.domain.Entry;
+import com.example.daily.common.PageResult;
+import java.time.LocalDate;
 import com.example.daily.mapper.EntryRepository;
 
 import java.util.List;
@@ -23,6 +25,12 @@ public class EntryService {
         return repository.findAll();
     }
 
+    /** 查询符合筛选条件的一页，并返回筛选后的总条数。 */
+    public PageResult<Entry> listPage(int page, int size, LocalDate date, Boolean done) {
+        long offset = PageResult.offset(page, size);
+        return new PageResult<>(repository.findPage(date, done, offset, size), repository.countPage(date, done), page, size);
+    }
+
     /**
      * 新建日程：忽略客户端传入的 ID 和完成状态，再插入并读取新记录。
      * MyBatis 会将数据库生成的主键写入 input.id，供后面的查询使用。
@@ -34,6 +42,11 @@ public class EntryService {
         input.done = false;
         repository.insert(input);
         return repository.findById(input.id);
+    }
+
+    /** 在调用方事务内锁定日程，读取修改前状态；锁在事务结束后释放。 */
+    public Optional<Entry> findForUpdate(Long id) {
+        return Optional.ofNullable(repository.findByIdForUpdate(id));
     }
 
     /** 根据路径中的 ID 更新日程；找不到时返回空 Optional，交给 Controller 处理。 */
