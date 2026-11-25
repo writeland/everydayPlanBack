@@ -1,4 +1,4 @@
-package com.exmple.practice;
+package com.example.practice;
 
 public class Task {
     private String title;

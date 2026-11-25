@@ -1,6 +1,6 @@
-package com.exmple.practice;
+package com.example.practice;
 import com.example.daily.domain.Entry;
-import java.util.ArrayList;
+
 import java.util.List;
 
 public class HelloJava {
